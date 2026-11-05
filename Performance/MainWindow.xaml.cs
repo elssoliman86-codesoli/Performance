@@ -25,7 +25,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _metricsTimer = new(), _processTimer = new(), _networkTimer = new();
     private readonly WinForms.NotifyIcon _trayIcon;
     private readonly OverlayWindow _overlay;
-    private readonly ComboBox _residualCombo;
+    private readonly System.Windows.Controls.ComboBox _residualCombo;
     private ICollectionView? _processView;
     private CancellationTokenSource? _scanCancellation;
     private bool _metricsBusy, _networkBusy, _allowExit, _isGaming;
@@ -46,7 +46,7 @@ public partial class MainWindow : Window
         ProcessGrid.ItemsSource = _processView;
 
         // The residual-folder picker is injected into the existing details panel.
-        _residualCombo = new ComboBox
+        _residualCombo = new System.Windows.Controls.ComboBox
         {
             Height = 27, Width = 440, HorizontalAlignment = HorizontalAlignment.Left,
             Margin = new Thickness(0, 5, 0, 0), Background = new System.Windows.Media.SolidColorBrush(
