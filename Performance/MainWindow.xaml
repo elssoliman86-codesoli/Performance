@@ -131,7 +131,7 @@
                             <TextBlock Text="LIVE MONITOR" FontSize="9" FontWeight="Bold" Foreground="#54D9C7"/>
                         </Border>
                     </StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" shell:WindowChrome.IsHitTestVisibleInChrome="True">
                         <TextBlock x:Name="HeaderClock" Foreground="#8C9BB5" FontSize="12" VerticalAlignment="Center" Margin="0,0,15,0"/>
                         <Button Content="—" Width="34" Height="30" Click="Minimize_Click" Background="Transparent" BorderThickness="0" Foreground="#9DB0CB" FontSize="17"/>
                         <Button Content="×" Width="34" Height="30" Click="Hide_Click" Background="Transparent" BorderThickness="0" Foreground="#FF7586" FontSize="20"/>
