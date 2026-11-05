@@ -13,12 +13,15 @@ public sealed class PresentMonService : IDisposable
     private string? _csvHeader;
     private int _frameColumn = -1;
     public double? Fps { get; private set; }
+    public string Status { get; private set; } = "Not started";
+    public string? LastError { get; private set; }
 
     public bool Start(int pid)
     {
         Stop();
         string? exe = EnsurePresentMon();
-        if (exe is null) return false;
+        if (exe is null) { Status = "PresentMon.exe missing"; LastError = "PresentMon.exe could not be found or extracted."; return false; }
+        Status = "Starting capture…"; LastError = null;
         try
         {
             var info = new ProcessStartInfo
@@ -31,13 +34,13 @@ public sealed class PresentMonService : IDisposable
             };
             _process = new Process { StartInfo = info, EnableRaisingEvents = true };
             _process.OutputDataReceived += (_, e) => { if (e.Data is not null) ConsumeLine(e.Data); };
-            _process.ErrorDataReceived += (_, _) => { };
+            _process.ErrorDataReceived += (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) LastError = e.Data; };\n            _process.Exited += (_, _) => { Status = $"PresentMon exited (code {_process?.ExitCode})"; };
             _process.Start();
             _process.BeginOutputReadLine();
             _process.BeginErrorReadLine();
             return true;
         }
-        catch { Stop(); return false; }
+        catch (Exception ex) { LastError = ex.Message; Status = "Capture failed"; Stop(); return false; }
     }
 
     private void ConsumeLine(string line)
