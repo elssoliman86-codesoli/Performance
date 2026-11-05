@@ -65,6 +65,7 @@ public sealed class NvidiaProviderService
         using var response = await Http.SendAsync(request, ct);
         response.EnsureSuccessStatusCode();
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
-        var content = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content");\n        return content.ValueKind == JsonValueKind.String ? content.GetString() ?? "" : content.ToString();
+        var content = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content");
+        return content.ValueKind == JsonValueKind.String ? content.GetString() ?? "" : content.ToString();
     }
 }
