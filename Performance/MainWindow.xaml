@@ -386,7 +386,9 @@
                                 <TextBlock Text="Threatening · Live process intelligence" FontSize="25" FontWeight="Bold"/>
                                 <TextBlock Text="Explainable defensive triage. Scores are signals for review, not proof of malware. No process is stopped automatically." Foreground="#8193AD" FontSize="12" Margin="0,5,0,0"/>
                                 <DockPanel Margin="0,12,0,0">
-                                    <TextBlock x:Name="ThreatReportPathText" Text="Reports: LocalAppData\Performance\Reports" Foreground="#8C9BB5" VerticalAlignment="Center"/>
+                                    <TextBox x:Name="ThreatReportPathText" Text="Reports: LocalAppData\Performance\Reports" Width="470" Height="32" Padding="8" VerticalContentAlignment="Center" Background="#111C2E" Foreground="#F2F6FF" BorderBrush="#2B3D58"/>
+                                    <Button Content="CHOOSE FOLDER" Style="{StaticResource QuietButton}" Click="ChooseThreatReportFolder_Click" DockPanel.Dock="Right"/>
+                                    <Button Content="AI EXPLAIN SELECTED" Style="{StaticResource QuietButton}" Click="AnalyzeThreat_Click" DockPanel.Dock="Right"/>
                                     <Button Content="REFRESH ANALYSIS" Style="{StaticResource ActionButton}" Click="RefreshThreat_Click" DockPanel.Dock="Right"/>
                                 </DockPanel>
                             </StackPanel>
