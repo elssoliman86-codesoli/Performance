@@ -46,7 +46,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         ProcessGrid.ItemsSource = _processRows;
         ThreatGrid.ItemsSource = _threatRows;
-        ThreatReportPathText.Text = "Reports: " + ThreatMonitorService.DefaultReportFolder;
+        ThreatReportPathText.Text = ThreatMonitorService.DefaultReportFolder;
         var provider = _nvidia.Load();
         AiBaseUrlBox.Text = provider.BaseUrl;
         if (!string.IsNullOrWhiteSpace(provider.Model)) AiModelBox.Text = provider.Model;
@@ -273,6 +273,30 @@ public partial class MainWindow : Window
     private void NavThreat_Click(object sender, RoutedEventArgs e) => MainTabs.SelectedIndex = 5;
     private void NavAi_Click(object sender, RoutedEventArgs e) => MainTabs.SelectedIndex = 6;
     private async void RefreshThreat_Click(object sender, RoutedEventArgs e) => await RefreshThreatAsync();
+
+    private void ChooseThreatReportFolder_Click(object sender, RoutedEventArgs e)
+    {
+        using var dialog = new WinForms.FolderBrowserDialog { Description = "Choose where Performance stores monitoring reports", UseDescriptionForTitle = true, ShowNewFolderButton = true, SelectedPath = Directory.Exists(ThreatReportPathText.Text) ? ThreatReportPathText.Text : ThreatMonitorService.DefaultReportFolder };
+        if (dialog.ShowDialog() == WinForms.DialogResult.OK)
+        {
+            ThreatReportPathText.Text = dialog.SelectedPath;
+            _threatMonitor = new ThreatMonitorService(dialog.SelectedPath);
+        }
+    }
+
+    private async void AnalyzeThreat_Click(object sender, RoutedEventArgs e)
+    {
+        if (ThreatGrid.SelectedItem is not ThreatFinding f)
+        { MessageBox.Show(this, "Select a process first.", "AI analysis", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        try
+        {
+            ThreatDetailsText.Text += "\\n\\nAI analysis in progress…";
+            string prompt = $"Analyze this Windows process telemetry as defensive triage. Explain evidence and uncertainty; do not recommend automatic deletion.\\nProcess: {f.ProcessName}\\nPID: {f.Pid}\\nPath: {f.ExecutablePath}\\nSHA256: {f.Sha256}\\nPublisher: {f.Publisher}\\nSignature status: {f.SignatureStatus}\\nRAM MB: {f.MemoryMb}\\nCPU %: {f.CpuPercent}\\nRisk heuristic: {f.Risk} {f.RiskScore}\\nEndpoints: {f.NetworkEndpoints}\\nSignals: {f.Reasons}";
+            string analysis = await _nvidia.AnalyzeAsync(prompt);
+            ThreatDetailsText.Text += "\\n\\nNVIDIA AI REVIEW\\n" + analysis;
+        }
+        catch (Exception ex) { ThreatDetailsText.Text += "\\nAI analysis unavailable: " + ex.Message; }
+    }
 
     private async Task RefreshThreatAsync()
     {
