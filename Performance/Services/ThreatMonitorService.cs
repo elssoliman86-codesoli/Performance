@@ -19,6 +19,8 @@ public sealed class ThreatMonitorService
     private readonly Dictionary<int, (DateTime First, string Path, double Memory, DateTime Last)> _seen = new();
     private readonly Dictionary<int, double> _previousMemory = new();
     private readonly string _reportRoot;
+    private readonly Dictionary<string, (DateTime LastWriteUtc, long Length, string Hash, string Publisher, string Signature)> _fileEvidence = new(StringComparer.OrdinalIgnoreCase);
+    private DateTime _lastReportUtc = DateTime.MinValue;
 
     public ThreatMonitorService(string reportRoot)
     {
@@ -46,15 +48,29 @@ public sealed class ThreatMonitorService
             _seen[p.Pid] = (state.First, p.Path, p.MemoryMb, now);
 
             string hash = "", publisher = "Unknown", signature = "Not verified";
-            try { using var stream = File.OpenRead(p.Path); hash = Convert.ToHexString(await SHA256.HashDataAsync(stream, cancellationToken)); } catch { }
             try
             {
-                var cert = X509Certificate.CreateFromSignedFile(p.Path);
-                using var cert2 = new X509Certificate2(cert);
-                publisher = cert2.GetNameInfo(X509NameType.SimpleName, false);
-                signature = cert2.Verify() ? "Certificate chain valid" : "Certificate present; chain not trusted";
+                var info = new FileInfo(p.Path);
+                if (_fileEvidence.TryGetValue(p.Path, out var cached) && cached.LastWriteUtc == info.LastWriteTimeUtc && cached.Length == info.Length)
+                {
+                    (hash, publisher, signature) = (cached.Hash, cached.Publisher, cached.Signature);
+                }
+                else
+                {
+                    using var stream = new FileStream(p.Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 1024 * 128, FileOptions.Asynchronous | FileOptions.SequentialScan);
+                    hash = Convert.ToHexString(await SHA256.HashDataAsync(stream, cancellationToken));
+                    try
+                    {
+                        var cert = X509Certificate.CreateFromSignedFile(p.Path);
+                        using var cert2 = new X509Certificate2(cert);
+                        publisher = cert2.GetNameInfo(X509NameType.SimpleName, false);
+                        signature = cert2.Verify() ? "Certificate chain valid" : "Certificate present; chain not trusted";
+                    }
+                    catch { signature = "Unsigned or signature unavailable"; }
+                    _fileEvidence[p.Path] = (info.LastWriteTimeUtc, info.Length, hash, publisher, signature);
+                }
             }
-            catch { signature = "Unsigned or signature unavailable"; }
+            catch { signature = "File evidence unavailable"; }
 
             int score = 0;
             var reasons = new List<string>();
