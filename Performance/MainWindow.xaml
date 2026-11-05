@@ -150,6 +150,9 @@
                             <Button Style="{StaticResource NavButton}" Content="⇄   Network" Click="NavNetwork_Click"/>
                             <Button Style="{StaticResource NavButton}" Content="▦   Installed apps" Click="NavApps_Click"/>
                             <Button Style="{StaticResource NavButton}" Content="▧   Storage analyzer" Click="NavStorage_Click"/>
+                            <Button Style="{StaticResource NavButton}" Content="⬡   Threatening" Click="NavThreat_Click"/>
+                            <Button Style="{StaticResource NavButton}" Content="✧   AI Settings" Click="NavAi_Click"/>
+
                         </StackPanel>
                         <StackPanel DockPanel.Dock="Bottom">
                             <Border Background="#101D30" BorderBrush="#223651" BorderThickness="1" CornerRadius="14" Padding="12" Margin="0,0,0,12">
@@ -375,6 +378,62 @@
                                 </DataGrid.Columns>
                             </DataGrid>
                         </Grid>
+                    </TabItem>
+                    <TabItem>
+                        <Grid Margin="26,22,26,26">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="150"/></Grid.RowDefinitions>
+                            <StackPanel Grid.Row="0" Margin="0,0,0,14">
+                                <TextBlock Text="Threatening · Live process intelligence" FontSize="25" FontWeight="Bold"/>
+                                <TextBlock Text="Explainable defensive triage. Scores are signals for review, not proof of malware. No process is stopped automatically." Foreground="#8193AD" FontSize="12" Margin="0,5,0,0"/>
+                                <DockPanel Margin="0,12,0,0">
+                                    <TextBlock x:Name="ThreatReportPathText" Text="Reports: LocalAppData\Performance\Reports" Foreground="#8C9BB5" VerticalAlignment="Center"/>
+                                    <Button Content="REFRESH ANALYSIS" Style="{StaticResource ActionButton}" Click="RefreshThreat_Click" DockPanel.Dock="Right"/>
+                                </DockPanel>
+                            </StackPanel>
+                            <DataGrid x:Name="ThreatGrid" Grid.Row="1" IsReadOnly="True" SelectionChanged="ThreatGrid_SelectionChanged">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="RISK" Binding="{Binding Risk}" Width="90"/>
+                                    <DataGridTextColumn Header="SCORE" Binding="{Binding RiskScore}" Width="65"/>
+                                    <DataGridTextColumn Header="PROCESS" Binding="{Binding ProcessName}" Width="150"/>
+                                    <DataGridTextColumn Header="PID" Binding="{Binding Pid}" Width="65"/>
+                                    <DataGridTextColumn Header="RAM MB" Binding="{Binding MemoryMb, StringFormat=N0}" Width="85"/>
+                                    <DataGridTextColumn Header="PUBLISHER" Binding="{Binding Publisher}" Width="150"/>
+                                    <DataGridTextColumn Header="SIGNATURE" Binding="{Binding SignatureStatus}" Width="160"/>
+                                    <DataGridTextColumn Header="EXECUTABLE" Binding="{Binding ExecutablePath}" Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <Border Grid.Row="2" Background="#101A2B" BorderBrush="#243651" BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,12,0,0">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <TextBlock x:Name="ThreatDetailsText" Text="Select a process to inspect its evidence, SHA-256, observed endpoints and heuristic reasons." TextWrapping="Wrap" Foreground="#B9C9DE" FontSize="11"/>
+                                </ScrollViewer>
+                            </Border>
+                        </Grid>
+                    </TabItem>
+                    <TabItem>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="26,22,26,26">
+                                <TextBlock Text="NVIDIA AI Provider" FontSize="25" FontWeight="Bold"/>
+                                <TextBlock Text="OpenAI-compatible NVIDIA API configuration. API keys are protected with Windows DPAPI for the current user." Foreground="#8193AD" FontSize="12" Margin="0,5,0,18"/>
+                                <TextBlock Text="BASE URL" Foreground="#8C9BB5" FontSize="10" FontWeight="Bold"/>
+                                <TextBox x:Name="AiBaseUrlBox" Text="https://integrate.api.nvidia.com/v1" Height="38" Padding="10" Margin="0,6,0,12" Background="#111C2E" Foreground="#F2F6FF" BorderBrush="#2B3D58"/>
+                                <TextBlock Text="NVIDIA API KEY" Foreground="#8C9BB5" FontSize="10" FontWeight="Bold"/>
+                                <PasswordBox x:Name="AiApiKeyBox" Height="38" Padding="10" Margin="0,6,0,12" Background="#111C2E" Foreground="#F2F6FF" BorderBrush="#2B3D58"/>
+                                <TextBlock Text="MODEL" Foreground="#8C9BB5" FontSize="10" FontWeight="Bold"/>
+                                <ComboBox x:Name="AiModelBox" Height="38" Margin="0,6,0,12" IsEditable="True" Background="#111C2E" Foreground="#F2F6FF"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="LIST MODELS" Style="{StaticResource QuietButton}" Click="ListAiModels_Click"/>
+                                    <Button Content="SAVE PROVIDER" Style="{StaticResource ActionButton}" Click="SaveAiProvider_Click"/>
+                                    <Button Content="TEST AI" Style="{StaticResource QuietButton}" Click="TestAiProvider_Click"/>
+                                </StackPanel>
+                                <TextBlock x:Name="AiStatusText" Text="Not configured. The AI is advisory only and cannot execute actions." Foreground="#8C9BB5" TextWrapping="Wrap" Margin="0,12,0,0"/>
+                                <Border Background="#101A2B" BorderBrush="#243651" BorderThickness="1" CornerRadius="14" Padding="16" Margin="0,22,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Privacy and control" FontSize="16" FontWeight="Bold"/>
+                                        <TextBlock Text="Only telemetry you explicitly send for analysis is sent to the selected API. API keys are stored encrypted for this Windows account. Reports remain on the folder configured for local monitoring. No auto-remediation, process termination, deletion, driver installation or Windows Update installation is permitted." Foreground="#9AACC5" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
                     </TabItem>
                 </TabControl>
             </Grid>
