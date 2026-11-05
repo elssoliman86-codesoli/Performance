@@ -17,6 +17,11 @@ public partial class MainWindow : Window
     private readonly ProcessMonitor _processMonitor = new();
     private readonly NetworkMonitor _networkMonitor = new();
     private readonly StorageScanner _storageScanner = new();
+    private readonly NvidiaProviderService _nvidia = new();
+    private readonly ObservableCollection<ThreatFinding> _threatRows = new();
+    private ThreatMonitorService? _threatMonitor;
+    private readonly DispatcherTimer _threatTimer = new();
+    private bool _threatBusy;
     private readonly PresentMonService _presentMon = new();
     private readonly GameWindowTracker _gameTracker = new();
     private readonly ObservableCollection<ProcessRow> _processRows = new();
@@ -40,6 +45,12 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         ProcessGrid.ItemsSource = _processRows;
+        ThreatGrid.ItemsSource = _threatRows;
+        ThreatReportPathText.Text = "Reports: " + ThreatMonitorService.DefaultReportFolder;
+        var provider = _nvidia.Load();
+        AiBaseUrlBox.Text = provider.BaseUrl;
+        if (!string.IsNullOrWhiteSpace(provider.Model)) AiModelBox.Text = provider.Model;
+        _threatMonitor = new ThreatMonitorService(ThreatMonitorService.DefaultReportFolder);
         DashboardProcessGrid.ItemsSource = _processRows;
         AppsGrid.ItemsSource = _appRows;
         NetworkGrid.ItemsSource = _connectionRows;
@@ -85,14 +96,18 @@ public partial class MainWindow : Window
         _processTimer.Tick += async (_, _) => await RefreshProcessesAsync();
         _networkTimer.Interval = TimeSpan.FromSeconds(8);
         _networkTimer.Tick += async (_, _) => await RefreshNetworkAsync();
+        _threatTimer.Interval = TimeSpan.FromSeconds(10);
+        _threatTimer.Tick += async (_, _) => await RefreshThreatAsync();
 
         Loaded += async (_, _) =>
         {
             _metricsTimer.Start();
             _processTimer.Start();
             _networkTimer.Start();
+            _threatTimer.Start();
             await RefreshProcessesAsync();
             await RefreshNetworkAsync();
+            await RefreshThreatAsync();
             await LoadAppsAsync();
         };
     }
@@ -224,6 +239,7 @@ public partial class MainWindow : Window
         _metricsTimer.Stop();
         _processTimer.Stop();
         _networkTimer.Stop();
+        _threatTimer.Stop();
         _scanCancellation?.Cancel();
         _presentMon.Dispose();
         _hardware.Dispose();
@@ -254,6 +270,71 @@ public partial class MainWindow : Window
         if (_appRows.Count == 0) await LoadAppsAsync();
     }
     private void NavStorage_Click(object sender, RoutedEventArgs e) => MainTabs.SelectedIndex = 4;
+    private void NavThreat_Click(object sender, RoutedEventArgs e) => MainTabs.SelectedIndex = 5;
+    private void NavAi_Click(object sender, RoutedEventArgs e) => MainTabs.SelectedIndex = 6;
+    private async void RefreshThreat_Click(object sender, RoutedEventArgs e) => await RefreshThreatAsync();
+
+    private async Task RefreshThreatAsync()
+    {
+        if (_threatBusy || _threatMonitor is null) return;
+        _threatBusy = true;
+        try
+        {
+            if (_processRows.Count == 0) await RefreshProcessesAsync();
+            if (_connectionRows.Count == 0) await RefreshNetworkAsync();
+            var rows = await _threatMonitor.CaptureAsync(_processRows.ToList(), _connectionRows.ToList());
+            int? selected = (ThreatGrid.SelectedItem as ThreatFinding)?.Pid;
+            _threatRows.Clear();
+            foreach (var row in rows) _threatRows.Add(row);
+            if (selected.HasValue) ThreatGrid.SelectedItem = _threatRows.FirstOrDefault(x => x.Pid == selected.Value);
+        }
+        catch (Exception ex) { ThreatDetailsText.Text = "Threat scan warning: " + ex.Message; }
+        finally { _threatBusy = false; }
+    }
+
+    private void ThreatGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ThreatGrid.SelectedItem is not ThreatFinding f) return;
+        ThreatDetailsText.Text = $"RISK: {f.Risk} ({f.RiskScore})\\nPROCESS: {f.ProcessName} / PID {f.Pid}\\nPATH: {f.ExecutablePath}\\nSHA-256: {f.Sha256}\\nPUBLISHER: {f.Publisher}\\nSIGNATURE: {f.SignatureStatus}\\nMEMORY: {f.MemoryMb:0.0} MB | CPU: {f.CpuPercent:0.0}%\\nFIRST SEEN: {f.FirstSeenUtc:u}\\nENDPOINTS: {f.NetworkEndpoints}\\nEVIDENCE: {f.Reasons}";
+    }
+
+    private async void ListAiModels_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            string key = AiApiKeyBox.Password;
+            if (string.IsNullOrWhiteSpace(key)) throw new InvalidOperationException("Enter the NVIDIA API key first.");
+            AiStatusText.Text = "Loading models…";
+            var models = await _nvidia.ListModelsAsync(AiBaseUrlBox.Text.Trim(), key);
+            AiModelBox.ItemsSource = models;
+            AiStatusText.Text = $"Loaded {models.Count} models from the configured endpoint.";
+        }
+        catch (Exception ex) { AiStatusText.Text = "Model list failed: " + ex.Message; }
+    }
+
+    private void SaveAiProvider_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            _nvidia.Save(AiBaseUrlBox.Text, AiApiKeyBox.Password, AiModelBox.Text);
+            AiApiKeyBox.Clear();
+            AiStatusText.Text = "Provider saved. API key encrypted for this Windows user.";
+        }
+        catch (Exception ex) { AiStatusText.Text = "Save failed: " + ex.Message; }
+    }
+
+    private async void TestAiProvider_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(AiApiKeyBox.Password))
+                _nvidia.Save(AiBaseUrlBox.Text, AiApiKeyBox.Password, AiModelBox.Text);
+            AiStatusText.Text = "Testing selected model…";
+            string result = await _nvidia.AnalyzeAsync("Reply with a short confirmation that the defensive analysis endpoint is reachable. Do not request or execute actions.");
+            AiStatusText.Text = "Connection successful: " + result;
+        }
+        catch (Exception ex) { AiStatusText.Text = "Connection test failed: " + ex.Message; }
+    }
     private async void RefreshProcesses_Click(object sender, RoutedEventArgs e) => await RefreshProcessesAsync();
 
     private void ProcessSearch_TextChanged(object sender, TextChangedEventArgs e)
@@ -302,7 +383,7 @@ public partial class MainWindow : Window
     {
         if (AppsGrid.SelectedItem is not InstalledAppRow app) return;
         ResidualText.Text = "Searching known application-data locations…";
-        var results = await Task.Run(() => InstalledAppsService.FindResidualFolders(app.DisplayName));
+        var results = await Task.Run(() => DeepDeleteService.FindCandidates(app).Select(x => new ResidualFolderRow(x.Path, x.SizeMb)).ToList());
         _residualRows.Clear();
         foreach (var item in results) _residualRows.Add(item);
         _residualCombo.SelectedIndex = -1;
