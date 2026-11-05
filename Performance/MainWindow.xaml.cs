@@ -306,7 +306,9 @@ public partial class MainWindow : Window
         {
             if (_processRows.Count == 0) await RefreshProcessesAsync();
             if (_connectionRows.Count == 0) await RefreshNetworkAsync();
-            var rows = await _threatMonitor.CaptureAsync(_processRows.ToList(), _connectionRows.ToList());
+            var processSnapshot = _processRows.ToList();
+            var connectionSnapshot = _connectionRows.ToList();
+            var rows = await Task.Run(async () => await _threatMonitor.CaptureAsync(processSnapshot, connectionSnapshot));
             int? selected = (ThreatGrid.SelectedItem as ThreatFinding)?.Pid;
             _threatRows.Clear();
             foreach (var row in rows) _threatRows.Add(row);
