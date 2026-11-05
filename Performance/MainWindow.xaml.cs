@@ -1,4 +1,6 @@
 using Performance.Services;
+using System.IO;
+using MessageBox = System.Windows.MessageBox;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
@@ -48,7 +50,7 @@ public partial class MainWindow : Window
         // The residual-folder picker is injected into the existing details panel.
         _residualCombo = new System.Windows.Controls.ComboBox
         {
-            Height = 27, Width = 440, HorizontalAlignment = HorizontalAlignment.Left,
+            Height = 27, Width = 440, HorizontalAlignment = System.Windows.HorizontalAlignment.Left,
             Margin = new Thickness(0, 5, 0, 0), Background = new System.Windows.Media.SolidColorBrush(
                 System.Windows.Media.Color.FromRgb(22, 36, 58)),
             Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.White),

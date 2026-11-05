@@ -1,3 +1,4 @@
+using System.IO;
 using LibreHardwareMonitor.Hardware;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
