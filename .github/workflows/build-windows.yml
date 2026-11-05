@@ -1,0 +1,58 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Download and verify PresentMon
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "Performance/Assets" | Out-Null
+          $url = "https://github.com/GameTechDev/PresentMon/releases/download/v2.6.0/PresentMon-2.6.0-x64.exe"
+          $file = "Performance/Assets/PresentMon.exe"
+          Invoke-WebRequest -Uri $url -OutFile $file
+          $actual = (Get-FileHash -Algorithm SHA256 $file).Hash.ToLowerInvariant()
+          $expected = "b2a706bc6ad475749e3b7e3409263aa1e6906d45bdcf993f6dbc0f660188f1af"
+          if ($actual -ne $expected) { throw "PresentMon SHA-256 validation failed." }
+
+      - name: Publish self-contained single-file EXE
+        run: dotnet publish Performance/Performance.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true --output publish
+
+      - name: Verify executable
+        shell: pwsh
+        run: |
+          if (!(Test-Path "publish/Performance.exe")) { throw "Performance.exe was not produced." }
+          Get-FileHash -Algorithm SHA256 "publish/Performance.exe" | Format-List
+
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Performance-Windows-x64
+          path: publish/Performance.exe
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish GitHub Release
+        if: github.event_name == 'push'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "v0.1.${{ github.run_number }}"
+          gh release create $tag "publish/Performance.exe" --repo "${{ github.repository }}" --title "Performance $tag" --notes-file "RELEASE_NOTES.md" --latest
