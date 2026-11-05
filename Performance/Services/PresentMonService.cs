@@ -34,7 +34,8 @@ public sealed class PresentMonService : IDisposable
             };
             _process = new Process { StartInfo = info, EnableRaisingEvents = true };
             _process.OutputDataReceived += (_, e) => { if (e.Data is not null) ConsumeLine(e.Data); };
-            _process.ErrorDataReceived += (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) LastError = e.Data; };\n            _process.Exited += (_, _) => { Status = $"PresentMon exited (code {_process?.ExitCode})"; };
+            _process.ErrorDataReceived += (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) LastError = e.Data; };
+            _process.Exited += (_, _) => { Status = $"PresentMon exited (code {_process?.ExitCode})"; };
             _process.Start();
             _process.BeginOutputReadLine();
             _process.BeginErrorReadLine();
