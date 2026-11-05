@@ -102,7 +102,9 @@ public sealed class InstalledAppsService
             {
                 Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)),
                 Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)),
-                Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData))
+                Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)),
+                Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)),
+                Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86))
             };
             bool allowed = roots.Any(root => full.StartsWith(root.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase));
             if (!allowed || !Directory.Exists(full)) return false;
