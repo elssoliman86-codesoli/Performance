@@ -63,8 +63,9 @@ public sealed class NvidiaProviderService
             }
         }), Encoding.UTF8, "application/json");
         using var response = await Http.SendAsync(request, ct);
-        response.EnsureSuccessStatusCode();
-        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+        string body = await response.Content.ReadAsStringAsync(ct);
+        if (!response.IsSuccessStatusCode) throw new HttpRequestException($"NVIDIA API returned {(int)response.StatusCode} {response.ReasonPhrase}: {body}");
+        using var doc = JsonDocument.Parse(body);
         var content = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content");
         return content.ValueKind == JsonValueKind.String ? content.GetString() ?? "" : content.ToString();
     }
