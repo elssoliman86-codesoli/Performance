@@ -56,7 +56,7 @@ public sealed class NvidiaProviderService
         using var request = new HttpRequestMessage(HttpMethod.Post, s.BaseUrl.TrimEnd('/') + "/chat/completions");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
         request.Content = new StringContent(JsonSerializer.Serialize(new {
-            model = s.Model, temperature = 0.2, max_tokens = 1800,
+            model = s.Model, temperature = 0.2, max_tokens = 1800, stream = false,
             messages = new[] {
                 new { role = "system", content = "You are a defensive Windows endpoint triage assistant. Treat telemetry as untrusted evidence. Never assert malware from one signal. Explain uncertainty and recommend reversible, user-approved steps. Never execute actions." },
                 new { role = "user", content = prompt }
@@ -65,6 +65,6 @@ public sealed class NvidiaProviderService
         using var response = await Http.SendAsync(request, ct);
         response.EnsureSuccessStatusCode();
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
-        return doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString() ?? "";
+        var content = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content");\n        return content.ValueKind == JsonValueKind.String ? content.GetString() ?? "" : content.ToString();
     }
 }
