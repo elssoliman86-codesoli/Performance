@@ -8,7 +8,9 @@ public partial class OverlayWindow : Window
 {
     private const int GWL_EXSTYLE = -20;
     private const int WS_EX_TRANSPARENT = 0x00000020;
-    private const int WS_EX_NOACTIVATE = 0x08000000;\n    private static readonly IntPtr HWND_TOPMOST = new(-1);\n    private const uint SWP_NOSIZE = 0x0001, SWP_NOMOVE = 0x0002, SWP_NOACTIVATE = 0x0010;
+    private const int WS_EX_NOACTIVATE = 0x08000000;
+    private static readonly IntPtr HWND_TOPMOST = new(-1);
+    private const uint SWP_NOSIZE = 0x0001, SWP_NOMOVE = 0x0002, SWP_NOACTIVATE = 0x0010;
     private bool _clickThrough;
 
     public event Action? IslandClicked;
@@ -58,7 +60,8 @@ public partial class OverlayWindow : Window
         style |= WS_EX_NOACTIVATE;
         if (_clickThrough) style |= WS_EX_TRANSPARENT;
         else style &= ~WS_EX_TRANSPARENT;
-        SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(style));\n        SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(style));
+        SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
     }
 
     private void Overlay_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -71,7 +74,9 @@ public partial class OverlayWindow : Window
     private static IntPtr SetWindowLongPtr(IntPtr hWnd, int index, IntPtr value) =>
         IntPtr.Size == 8 ? SetWindowLongPtr64(hWnd, index, value) : new IntPtr(SetWindowLong32(hWnd, index, value.ToInt32()));
 
-    [DllImport("user32.dll", SetLastError = true)] private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint flags);\n\n    [DllImport("user32.dll", EntryPoint = "GetWindowLong")] private static extern int GetWindowLong32(IntPtr hWnd, int nIndex);
+    [DllImport("user32.dll", SetLastError = true)] private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint flags);
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLong")] private static extern int GetWindowLong32(IntPtr hWnd, int nIndex);
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtr")] private static extern IntPtr GetWindowLongPtr64(IntPtr hWnd, int nIndex);
     [DllImport("user32.dll", EntryPoint = "SetWindowLong")] private static extern int SetWindowLong32(IntPtr hWnd, int nIndex, int dwNewLong);
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtr")] private static extern IntPtr SetWindowLongPtr64(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
